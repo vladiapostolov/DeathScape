@@ -16,6 +16,14 @@ background = pygame.image.load('./assets/game_background.png')
 idle_frames = load_sheet('Idle.png')
 walk_frames = load_sheet('Walk.png')
 shooting_frames = load_sheet('Shot.png')
+hud = pygame.image.load('./assets/ui/hud_panel.png').convert_alpha()
+avatar_img = pygame.image.load('./assets/ui/hero_avatar.png').convert_alpha()
+health_bg_img = pygame.image.load('./assets/ui/health_bar_bg.png').convert_alpha()
+health_fill_img = pygame.image.load('./assets/ui/health_bar_fill.png').convert_alpha()
+ammo_icon_img = pygame.image.load('./assets/ui/ammo_icon.png').convert_alpha()
+health_fill_w, health_fill_h = health_fill_img.get_size()
+
+avatar_smooth = pygame.transform.smoothscale(avatar_img, (80, 80))
 
 player = Hero(screen.get_width() / 2, screen.get_height() / 2)
 player_pos = pygame.Vector2(screen.get_width() / 2, screen.get_height() / 2)
@@ -67,6 +75,20 @@ while run:
             
     screen.blit(background, (0, 0))
     screen.blit(frame, player_pos)
+
+    hud_x = 17
+    hud_y = 13
+    screen.blit(hud, (hud_x, hud_y))
+    screen.blit(avatar_smooth, (hud_x + 5, hud_y + 9))
+
+    health_pct = max(0, min(1, player.health / 100))
+    screen.blit(health_bg_img, (hud_x + 86, hud_y + 16))
+    fill_visible_w = int(health_fill_w * health_pct)
+    if fill_visible_w > 0:
+        health_fill_cropped = health_fill_img.subsurface((0, 0, fill_visible_w, health_fill_h))
+        screen.blit(health_fill_cropped, (hud_x + 89, hud_y + 19))
+
+    screen.blit(ammo_icon_img, (hud_x + 84, hud_y + 44))
     
     pygame.display.flip()
     dt = clock.tick(60) / 1000
