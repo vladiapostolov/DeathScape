@@ -16,6 +16,8 @@ background = pygame.image.load('./assets/game_background.png')
 idle_frames = load_sheet('Idle.png')
 walk_frames = load_sheet('Walk.png')
 shooting_frames = load_sheet('Shot.png')
+jumping_frames = load_sheet('Jump.png')
+
 hud = pygame.image.load('./assets/ui/hud_panel.png').convert_alpha()
 avatar_img = pygame.image.load('./assets/ui/hero_avatar.png').convert_alpha()
 health_bg_img = pygame.image.load('./assets/ui/health_bar_bg.png').convert_alpha()
@@ -33,42 +35,74 @@ dt = 0
 anim_timer = 0
 anim_frame = 0
 run = True
+cur_state = ''
+prev_state = 'idle'
+jump_iterations = 0
 while run:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
 
+    if jump_iterations == len(jumping_frames):
+        jump_iterations = 0
+        
     keys = pygame.key.get_pressed()
     moving = False
+    jumping = False
+    cur_state = 'idle'
     if keys[pygame.K_w]:
         player_pos.y -= 200 * dt
         player.y = player_pos.y
         moving = True
+        cur_state = 'w'
     if keys[pygame.K_s]:
         player_pos.y += 200 * dt
         player.y = player_pos.y
         moving = True
+        cur_state = 's'
     if keys[pygame.K_a]:
         facing = 'left'
         player_pos.x -= 200 * dt
         player.x = player_pos.x
         moving = True
+        cur_state = 'a'
     if keys[pygame.K_d]:
         facing = 'right'
         player_pos.x += 200 * dt
         player.x = player_pos.x
         moving = True
-
+        cur_state = 'd'
+    if keys[pygame.K_SPACE]:
+        jumping = True
+        cur_state = 'space'
+        jump_iterations += 1
+        
+    if cur_state != prev_state:
+        prev_state = cur_state
+        anim_frame = 0
+        
     anim_timer += dt
     frame_duration = 1 / ANIM_FPS
     if anim_timer >= frame_duration:
         anim_timer -= frame_duration
-        anim_frame = (anim_frame + 1) % len(walk_frames if moving else idle_frames)
-
-    if not moving:
-        frame = idle_frames[anim_frame]
+        #anim_frame = (anim_frame + 1) % len(walk_frames if moving else idle_frames)
+        if jumping or jump_iterations > 0:
+            anim_frame = (anim_frame + 1) % len(jumping_frames)
+        elif moving:
+            anim_frame = (anim_frame + 1) % len(walk_frames)
+        else:
+            anim_frame = (anim_frame + 1) % len(idle_frames)
+    
+    if jump_iterations >= 1:
+        frame = jumping_frames[anim_frame % len(jumping_frames)]
+        #jump_iterations += 1
+        if jump_iterations >= len(jumping_frames):
+            jump_iterations = 0  # Reset only after completing all frames
+            jumping = False  # Ensure jumping state is reset after animation
+    elif moving:
+        frame = walk_frames[anim_frame % len(walk_frames)]
     else:
-        frame = walk_frames[anim_frame]
+        frame = idle_frames[anim_frame % len(idle_frames)]
     
     if facing == 'left':
         frame = pygame.transform.flip(frame, True, False)
