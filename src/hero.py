@@ -16,4 +16,8 @@ class Hero:
             return self.ammo
         else:
             raise ValueError("Invalid get argument passed")
+    
+    def shoot(self, shotFired):
+        self.ammo -= 1
+    
         

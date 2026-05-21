@@ -1,6 +1,8 @@
 import pygame
+import random
 from utils import load_sheet
 from hero import Hero
+from enemy import Enemy
 
 pygame.init()
 
@@ -31,6 +33,13 @@ player = Hero(screen.get_width() / 2, screen.get_height() / 2)
 player_pos = pygame.Vector2(screen.get_width() / 2, screen.get_height() / 2)
 facing = 'right'
 
+enemies_to_render = 5
+spawn_timer = 0.0
+next_spawn_in = random.uniform(0.25, 1.25)
+enemy_size = (18, 18)
+enemy_speed = 80
+enemies = list()
+
 dt = 0
 anim_timer = 0
 anim_frame = 0
@@ -38,6 +47,7 @@ run = True
 cur_state = ''
 prev_state = 'idle'
 jump_iterations = 0
+jumping = False
 while run:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -48,7 +58,7 @@ while run:
         
     keys = pygame.key.get_pressed()
     moving = False
-    jumping = False
+    shooting = False
     cur_state = 'idle'
     if keys[pygame.K_w]:
         player_pos.y -= 200 * dt
@@ -75,21 +85,51 @@ while run:
     if keys[pygame.K_SPACE]:
         jumping = True
         cur_state = 'space'
-        jump_iterations += 1
-        
-    if cur_state != prev_state:
+    if keys[pygame.K_h]:
+        player.shoot(1)
+        shooting = True if player.ammo > 0 else False
+    
+    
+    
+    if cur_state != prev_state and jumping == False:
         prev_state = cur_state
         anim_frame = 0
         
     anim_timer += dt
+    spawn_timer += dt
+    
+    if spawn_timer >= next_spawn_in:
+        spawn_timer = 0.0
+
+        for _ in range(enemies_to_render):
+            side = random.choice(("left", "right"))
+            enemy_y = random.randint(0, SCREEN_HEIGHT)
+            
+            if side == "left":
+                enemy_x = 0
+                enemy = Enemy(enemy_x, enemy_y)
+            else:
+                enemy_x = SCREEN_WIDTH
+                enemy = Enemy(enemy_x, enemy_y)
+            
+            enemies.append(enemy)
+        
+        next_spawn_in = random.uniform(0.25, 1.25)
+    
+        
+    
     frame_duration = 1 / ANIM_FPS
     if anim_timer >= frame_duration:
+        if jumping:    
+            jump_iterations += 1
         anim_timer -= frame_duration
         #anim_frame = (anim_frame + 1) % len(walk_frames if moving else idle_frames)
         if jumping or jump_iterations > 0:
             anim_frame = (anim_frame + 1) % len(jumping_frames)
         elif moving:
             anim_frame = (anim_frame + 1) % len(walk_frames)
+        elif shooting:
+            anim_frame = (anim_frame + 1) % len(shooting_frames)
         else:
             anim_frame = (anim_frame + 1) % len(idle_frames)
     
@@ -101,6 +141,8 @@ while run:
             jumping = False  # Ensure jumping state is reset after animation
     elif moving:
         frame = walk_frames[anim_frame % len(walk_frames)]
+    elif shooting:
+        frame = shooting_frames[anim_frame % len(shooting_frames)]
     else:
         frame = idle_frames[anim_frame % len(idle_frames)]
     
@@ -123,6 +165,20 @@ while run:
         screen.blit(health_fill_cropped, (hud_x + 89, hud_y + 19))
 
     screen.blit(ammo_icon_img, (hud_x + 84, hud_y + 44))
+    
+    
+    
+    #lets draw the fuckers
+    for enemy in enemies:
+        pygame.draw.rect(screen, (0,0,0), (enemy.x, enemy.y, enemy_size[0], enemy_size[1])) 
+        dx = player_pos.x - enemy.x
+        dy = player_pos.y - enemy.y
+        distance = (dx * dx + dy * dy) ** 0.5
+        if distance > 0:
+            enemy.x += (dx / distance) * enemy_speed * dt
+            enemy.y += (dy / distance) * enemy_speed * dt
+    
+    
     
     pygame.display.flip()
     dt = clock.tick(60) / 1000
