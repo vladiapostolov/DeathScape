@@ -39,8 +39,13 @@ player = Hero(screen.get_width() / 2, screen.get_height() / 2)
 player_pos = pygame.Vector2(screen.get_width() / 2, screen.get_height() / 2)
 facing = 'right'
 
-enemies_to_render = 5
+base_enemies = 5
+current_wave = 1
 spawn_timer = 0.0
+wave_break = 15
+has_wave_finished = True
+killed_count = 0
+
 next_spawn_in = random.uniform(0.25, 1.25)
 enemy_size = (18, 18)
 enemy_speed = 80
@@ -120,7 +125,8 @@ while run:
     if spawn_timer >= next_spawn_in:
         spawn_timer = 0.0
 
-        for _ in range(enemies_to_render):
+    if has_wave_finished:
+        for _ in range(base_enemies):
             side = random.choice(("left", "right"))
             enemy_y = random.randint(0, SCREEN_HEIGHT)
             
@@ -132,7 +138,7 @@ while run:
                 enemy = Enemy(enemy_x, enemy_y)
             
             enemies.append(enemy)
-        
+        has_wave_finished = False
         next_spawn_in = random.uniform(0.25, 1.25)
     
         
@@ -202,10 +208,13 @@ while run:
     #if shooting:
     for bullet in bullets:
         bullet.updateBullet(dt)
-        if bullet.isOffMap():
+        if bullet.isOffMap() or bullet.collided:
             continue
         
         if hasCollided(bullet, enemies):
+            bullet.collided = True
+            if bullet.killed_enemy:
+                killed_count += 1
             continue
             
         pygame.draw.rect(
@@ -215,7 +224,10 @@ while run:
         )
         
         
-    
+    if killed_count == base_enemies:
+        has_wave_finished = True
+        base_enemies *= 2
+        
     time_since_last_shot += dt
     pygame.display.flip()
     dt = clock.tick(60) / 1000

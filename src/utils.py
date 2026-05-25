@@ -28,6 +28,7 @@ def hasCollided(bullet, enemies):
             enemy.health -= bullet.damage
             if enemy.health <= 0:
                 enemy.is_dead = True
+                bullet.killed_enemy = True
             return True
     return False
         

@@ -8,7 +8,9 @@ class Bullet:
         self.speed = speed
         self.damage = damage
         self.facing = facing
-    
+        self.collided = False
+        self.killed_enemy = False
+        
     def updateBullet(self, dt):
         if self.facing == 'right':
             self.x += self.speed * dt
