@@ -3,12 +3,18 @@ import random
 from utils import load_sheet
 from hero import Hero
 from enemy import Enemy
+from bullet import Bullet
 
 pygame.init()
 
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 800
 ANIM_FPS = 10
+BULLET_SPEED = 700
+BULLET_DAMAGE = 34
+BULLET_W = 10
+BULLET_H = 4
+BULLET_COLOR = (255, 220, 120)
 
 clock = pygame.time.Clock()
 pygame.display.set_caption('DeathScape')
@@ -48,6 +54,8 @@ cur_state = ''
 prev_state = 'idle'
 jump_iterations = 0
 jumping = False
+
+bullets = list()
 while run:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -88,7 +96,15 @@ while run:
     if keys[pygame.K_h]:
         player.shoot(1)
         shooting = True if player.ammo > 0 else False
-    
+            #we throw the bullet from the current position
+        if shooting:
+            if facing == 'left':
+                bullet_x = player.x - 20
+                bullet_y = player.y
+            elif facing == 'right':
+                bullet_x = player.x + 20
+                bullet_y = player.y
+            bullets.append(Bullet(bullet_x, bullet_y, BULLET_SPEED, BULLET_DAMAGE, facing))
     
     
     if cur_state != prev_state and jumping == False:
@@ -150,7 +166,7 @@ while run:
         frame = pygame.transform.flip(frame, True, False)
             
     screen.blit(background, (0, 0))
-    screen.blit(frame, player_pos)
+    screen.blit(frame, (player.x - 55, player.y - 90))
 
     hud_x = 17
     hud_y = 13
@@ -171,13 +187,25 @@ while run:
     #lets draw the fuckers
     for enemy in enemies:
         pygame.draw.rect(screen, (0,0,0), (enemy.x, enemy.y, enemy_size[0], enemy_size[1])) 
-        dx = player_pos.x - enemy.x
-        dy = player_pos.y - enemy.y
+        dx = player.x - enemy.x
+        dy = player.y - enemy.y
         distance = (dx * dx + dy * dy) ** 0.5
         if distance > 0:
             enemy.x += (dx / distance) * enemy_speed * dt
             enemy.y += (dy / distance) * enemy_speed * dt
-    
+    #if shooting:
+    for bullet in bullets:
+        bullet.updateBullet(dt)
+        if bullet.isOffMap():
+            continue
+        
+        pygame.draw.rect(
+            screen,
+            BULLET_COLOR,
+            (int(bullet.x), int(bullet.y), BULLET_W, BULLET_H)
+        )
+        
+        
     
     
     pygame.display.flip()
