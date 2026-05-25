@@ -1,5 +1,7 @@
 import pygame
 from pathlib import Path
+from enemy import Enemy
+from bullet import Bullet
 
 SHEET_DIR = Path('./assets/gangster-pixel-character-sprite-sheets-pack/Gangsters_1')
 
@@ -12,3 +14,20 @@ def load_sheet(filename, frame_w = 128, frame_h = 128):
         frame = sheet.subsurface((i*frame_w, 0, frame_w, frame_h))
         frames.append(frame)
     return frames
+
+def hasCollided(bullet, enemies):
+    bullet_rect = pygame.Rect(
+        int(bullet.x), int(bullet.y), 10, 4
+    )
+    
+    for enemy in enemies:
+        enemy_rect = pygame.Rect(
+            int(enemy.x), int(enemy.y), 18, 18
+        )
+        if bullet_rect.colliderect(enemy_rect):
+            enemy.health -= bullet.damage
+            if enemy.health <= 0:
+                enemy.is_dead = True
+            return True
+    return False
+        

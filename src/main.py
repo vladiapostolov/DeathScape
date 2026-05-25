@@ -1,6 +1,6 @@
 import pygame
 import random
-from utils import load_sheet
+from utils import load_sheet, hasCollided
 from hero import Hero
 from enemy import Enemy
 from bullet import Bullet
@@ -48,6 +48,8 @@ enemies = list()
 
 dt = 0
 anim_timer = 0
+fire_interval = 0.15
+time_since_last_shot = 0.0
 anim_frame = 0
 run = True
 cur_state = ''
@@ -93,10 +95,11 @@ while run:
     if keys[pygame.K_SPACE]:
         jumping = True
         cur_state = 'space'
-    if keys[pygame.K_h]:
+    if keys[pygame.K_h] and time_since_last_shot >= fire_interval:
         player.shoot(1)
         shooting = True if player.ammo > 0 else False
             #we throw the bullet from the current position
+        time_since_last_shot = 0.0
         if shooting:
             if facing == 'left':
                 bullet_x = player.x - 20
@@ -186,6 +189,9 @@ while run:
     
     #lets draw the fuckers
     for enemy in enemies:
+        if enemy.is_dead:
+            continue
+        
         pygame.draw.rect(screen, (0,0,0), (enemy.x, enemy.y, enemy_size[0], enemy_size[1])) 
         dx = player.x - enemy.x
         dy = player.y - enemy.y
@@ -199,6 +205,9 @@ while run:
         if bullet.isOffMap():
             continue
         
+        if hasCollided(bullet, enemies):
+            continue
+            
         pygame.draw.rect(
             screen,
             BULLET_COLOR,
@@ -207,7 +216,7 @@ while run:
         
         
     
-    
+    time_since_last_shot += dt
     pygame.display.flip()
     dt = clock.tick(60) / 1000
 
