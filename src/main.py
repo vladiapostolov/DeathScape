@@ -4,6 +4,8 @@ from utils import load_sheet, hasCollided
 from hero import Hero
 from enemy import Enemy
 from bullet import Bullet
+from object_factory import object_factory
+from health_object import health_obj
 
 pygame.init()
 
@@ -64,7 +66,9 @@ cur_state = ''
 prev_state = 'idle'
 jump_iterations = 0
 jumping = False
+random_object_spawn_rate = 0
 
+healths = list()
 bullets = list()
 while run:
     for event in pygame.event.get():
@@ -73,7 +77,8 @@ while run:
 
     if jump_iterations == len(jumping_frames):
         jump_iterations = 0
-        
+    
+    random_object_spawn_rate = random.uniform(0,13)
     keys = pygame.key.get_pressed()
     moving = False
     shooting = False
@@ -218,6 +223,12 @@ while run:
             bullet.collided = True
             if bullet.killed_enemy:
                 killed_count += 1
+                #obj = random_object(bullet.x, bullet.y) #we need to get the killed enemy's x and y
+                object_to_spawn = object_factory(bullet.x, bullet.y, random_object_spawn_rate)
+                
+                if isinstance(object_to_spawn, health_obj):
+                    healths.append(object_to_spawn)
+                    object_to_spawn.is_activated = True
             continue
             
         pygame.draw.rect(
@@ -231,7 +242,11 @@ while run:
     if killed_count == base_enemies:
         has_wave_finished = True
         base_enemies *= 2
-        
+    
+    for health_drop in healths:
+        if health_drop.is_activated:
+            pygame.draw.circle(screen, (255, 0, 0), (int(health_drop.x), int(health_drop.y)), 8)
+            
     time_since_last_shot += dt
     pygame.display.flip()
     dt = clock.tick(60) / 1000
