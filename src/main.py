@@ -16,6 +16,9 @@ BULLET_W = 10
 BULLET_H = 4
 BULLET_COLOR = (255, 220, 120)
 
+ammo_color = (214, 170, 92)
+ammo_font = pygame.font.SysFont('ammo', 28)
+
 clock = pygame.time.Clock()
 pygame.display.set_caption('DeathScape')
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -47,8 +50,8 @@ has_wave_finished = True
 killed_count = 0
 
 next_spawn_in = random.uniform(0.25, 1.25)
-enemy_size = (18, 18)
-enemy_speed = 80
+enemy_size = (25, 25)
+enemy_speed = 60
 enemies = list()
 
 dt = 0
@@ -222,8 +225,9 @@ while run:
             BULLET_COLOR,
             (int(bullet.x), int(bullet.y), BULLET_W, BULLET_H)
         )
-        
-        
+    
+    ammo_text = ammo_font.render(str(player.ammo), True, ammo_color)
+    screen.blit(ammo_text, (170, 63))
     if killed_count == base_enemies:
         has_wave_finished = True
         base_enemies *= 2

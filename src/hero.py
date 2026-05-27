@@ -19,5 +19,3 @@ class Hero:
     
     def shoot(self, shotFired):
         self.ammo -= 1
-    
-        
