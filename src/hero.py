@@ -4,6 +4,7 @@ class Hero:
         self.x = cur_x
         self.y = cur_y
         self.ammo = 50
+        self.grenades_count = 0
     
     def __getattr__(self, to_return):
         if to_return == 'x':
@@ -14,8 +15,13 @@ class Hero:
             return self.health
         elif to_return == 'ammo':
             return self.ammo
+        elif to_return == 'grenades_count':
+            return self.grenades_count
         else:
             raise ValueError("Invalid get argument passed")
     
     def shoot(self, shotFired):
         self.ammo -= 1
+        
+    def has_grenade(self):
+        return self.grenades_count > 0 

@@ -7,4 +7,4 @@ class health_obj(random_object):
         self.is_activated = False
         
     def apply_to_player(self, player_object):
-        player_object.health += self.health
+        player_object.health = min(100, player_object.health + self.health)

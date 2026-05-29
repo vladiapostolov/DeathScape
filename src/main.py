@@ -6,6 +6,9 @@ from enemy import Enemy
 from bullet import Bullet
 from object_factory import object_factory
 from health_object import health_obj
+from ammo_object import ammo_obj
+from grenade_object import grenade_obj
+from picked_grenade import ThrowGrenade
 
 pygame.init()
 
@@ -20,6 +23,9 @@ BULLET_COLOR = (255, 220, 120)
 
 ammo_color = (214, 170, 92)
 ammo_font = pygame.font.SysFont('ammo', 28)
+
+grenade_color = (214, 170, 92)
+grenade_font = pygame.font.SysFont('grenade', 28)
 
 clock = pygame.time.Clock()
 pygame.display.set_caption('DeathScape')
@@ -69,7 +75,11 @@ jumping = False
 random_object_spawn_rate = 0
 
 healths = list()
+ammos = list()
 bullets = list()
+active_grenades = list()
+grenades = list()
+
 while run:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -121,8 +131,9 @@ while run:
                 bullet_x = player.x + 20
                 bullet_y = player.y
             bullets.append(Bullet(bullet_x, bullet_y, BULLET_SPEED, BULLET_DAMAGE, facing))
-    
-    
+    if keys[pygame.K_g] and player.has_grenade():
+        pass
+                
     if cur_state != prev_state and jumping == False:
         prev_state = cur_state
         anim_frame = 0
@@ -229,6 +240,12 @@ while run:
                 if isinstance(object_to_spawn, health_obj):
                     healths.append(object_to_spawn)
                     object_to_spawn.is_activated = True
+                elif isinstance(object_to_spawn, ammo_obj):
+                    ammos.append(object_to_spawn)
+                    object_to_spawn.is_activated = True
+                elif isinstance(object_to_spawn, grenade_obj):
+                    grenades.append(object_to_spawn)
+                    object_to_spawn.is_activated = True
             continue
             
         pygame.draw.rect(
@@ -239,14 +256,37 @@ while run:
     
     ammo_text = ammo_font.render(str(player.ammo), True, ammo_color)
     screen.blit(ammo_text, (170, 63))
+    grenade_text = grenade_font.render(str(player.grenades_count), True, grenade_color)
+    screen.blit(grenade_text, (200, 63))
     if killed_count == base_enemies:
         has_wave_finished = True
         base_enemies *= 2
     
-    for health_drop in healths:
+    player_rect = pygame.Rect(int(player.x - 28), int(player.y - 45), 56, 90)
+    for health_drop in healths[:]:
         if health_drop.is_activated:
+            health_rect = pygame.Rect(int(health_drop.x - 6), int(health_drop.y - 6), 12, 12)
             pygame.draw.circle(screen, (255, 0, 0), (int(health_drop.x), int(health_drop.y)), 8)
-            
+            if player_rect.colliderect(health_rect):
+                health_drop.apply_to_player(player)
+                healths.remove(health_drop)
+
+    for ammo_drop in ammos:
+        if ammo_drop.is_activated:
+            ammo_rect = pygame.Rect(int(ammo_drop.x - 6), int(ammo_drop.y - 6), 12, 12)
+            pygame.draw.circle(screen, (255, 215, 0), (int(ammo_drop.x), int(ammo_drop.y)), 8)
+            if player_rect.colliderect(ammo_rect):
+                ammo_drop.apply_to_player(player)
+                ammos.remove(ammo_drop)
+
+    for grenade_drop in grenades:
+        if grenade_drop.is_activated:
+            grenade_rect = pygame.Rect(int(grenade_drop.x - 6), int(grenade_drop.y - 6), 12, 12)
+            pygame.draw.circle(screen, (0, 255, 0), (int(grenade_drop.x), int(grenade_drop.y)), 8)
+            if player_rect.colliderect(grenade_rect):
+                grenade_drop.apply_to_player(player)
+                grenades.remove(grenade_drop)
+    
     time_since_last_shot += dt
     pygame.display.flip()
     dt = clock.tick(60) / 1000
