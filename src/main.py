@@ -132,7 +132,21 @@ while run:
                 bullet_y = player.y
             bullets.append(Bullet(bullet_x, bullet_y, BULLET_SPEED, BULLET_DAMAGE, facing))
     if keys[pygame.K_g] and player.has_grenade():
-        pass
+        player.grenades_count -= 1
+        
+        throw_dir = -1 if facing == 'left' else 1
+        target_x = player.x + throw_dir * 240
+        target_y = player.y - 20
+    
+        active_grenades.append(ThrowGrenade(
+            start_x=player.x,
+            start_y=player.y - 30,
+            target_x=target_x,
+            target_y=target_y,
+            flight_time=0.55,
+            damage=100,
+            explosion_radius=90,
+        ))
                 
     if cur_state != prev_state and jumping == False:
         prev_state = cur_state
@@ -287,6 +301,40 @@ while run:
                 grenade_drop.apply_to_player(player)
                 grenades.remove(grenade_drop)
     
+    for g in active_grenades:
+        g.t += dt
+        p = min(1.0, g.t / g.flight_time)
+        g.x = g.start_x + (g.target_x - g.start_x) * p
+        g.y = g.start_y + (g.target_y - g.start_y) * p - 4 * g.arc_height * p * (1 - p)
+        if p >= 1.0:
+            g.exploded = True
+        pygame.draw.circle(screen, (60, 90, 120), (int(g.x), int(g.y)), 6)
+        
+        if g.exploded:
+            for enemy in enemies:
+                if enemy.is_dead:
+                    continue
+                
+                enemy_rect = pygame.Rect(int(enemy.x), int(enemy.y), enemy_size[0], enemy_size[1])
+                #now we check for the nearest point to the rect. Why? Idk, thats the alghorithm. We trust
+                closest_x = max(enemy_rect.left, min(g.x, enemy_rect.right))
+                closest_y = max(enemy_rect.top, min(g.y, enemy_rect.bottom))
+                closest_point = pygame.math.Vector2(closest_x, closest_y)
+                
+                distance_vector = (g.x, g.y) - closest_point
+                if distance_vector.length_squared() <= g.explosion_radius ** 2:
+                    enemy.health -= g.damage
+                    if enemy.health <= 0:
+                        enemy.is_dead = True
+                        killed_count += 1
+                
+                
+            g.explosion_timer += dt
+            if g.explosion_timer >= frame_duration:
+                active_grenades.pop(active_grenades.index(g))
+            else:
+                pygame.draw.circle(screen, (255, 130, 0), (int(g.x), int(g.y)), g.explosion_radius)
+        
     time_since_last_shot += dt
     pygame.display.flip()
     dt = clock.tick(60) / 1000

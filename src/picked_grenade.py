@@ -7,3 +7,9 @@ class ThrowGrenade:
         self.flight_time = flight_time
         self.damage = damage
         self.explosion_radius = explosion_radius
+        self.t = 0.0
+        self.x = start_x
+        self.y = start_y
+        self.arc_height = 70
+        self.exploded = False
+        self.explosion_timer = 0.0
