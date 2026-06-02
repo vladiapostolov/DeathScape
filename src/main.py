@@ -62,6 +62,8 @@ enemy_size = (25, 25)
 enemy_speed = 60
 enemies = list()
 
+time_since_last_grenade = 0.0
+grenade_throw_interval = 0.35
 dt = 0
 anim_timer = 0
 fire_interval = 0.15
@@ -131,9 +133,10 @@ while run:
                 bullet_x = player.x + 20
                 bullet_y = player.y
             bullets.append(Bullet(bullet_x, bullet_y, BULLET_SPEED, BULLET_DAMAGE, facing))
-    if keys[pygame.K_g] and player.has_grenade():
+    if keys[pygame.K_g] and player.has_grenade() and time_since_last_grenade >= grenade_throw_interval:
         player.grenades_count -= 1
         
+        time_since_last_grenade = 0.0
         throw_dir = -1 if facing == 'left' else 1
         target_x = player.x + throw_dir * 240
         target_y = player.y - 20
@@ -327,8 +330,10 @@ while run:
                     if enemy.health <= 0:
                         enemy.is_dead = True
                         killed_count += 1
-                
-                
+                        if killed_count == base_enemies:
+                            has_wave_finished = True
+                            base_enemies *= 2
+            
             g.explosion_timer += dt
             if g.explosion_timer >= frame_duration:
                 active_grenades.pop(active_grenades.index(g))
@@ -336,7 +341,9 @@ while run:
                 pygame.draw.circle(screen, (255, 130, 0), (int(g.x), int(g.y)), g.explosion_radius)
         
     time_since_last_shot += dt
+    time_since_last_grenade += dt
     pygame.display.flip()
     dt = clock.tick(60) / 1000
 
+    
 pygame.quit()
