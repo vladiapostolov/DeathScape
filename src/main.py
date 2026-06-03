@@ -36,6 +36,7 @@ idle_frames = load_sheet('Idle.png')
 walk_frames = load_sheet('Walk.png')
 shooting_frames = load_sheet('Shot.png')
 jumping_frames = load_sheet('Jump.png')
+death_frames = load_sheet('Dead.png')
 
 hud = pygame.image.load('./assets/ui/hud_panel.png').convert_alpha()
 avatar_img = pygame.image.load('./assets/ui/hero_avatar.png').convert_alpha()
@@ -75,6 +76,11 @@ prev_state = 'idle'
 jump_iterations = 0
 jumping = False
 random_object_spawn_rate = 0
+dying = False
+dying_frames_passed = 0
+enemy_hit_cooldown = 0.6
+time_since_last_hit = 0.0
+dead = False
 
 healths = list()
 ammos = list()
@@ -86,41 +92,41 @@ while run:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
-
+    
     if jump_iterations == len(jumping_frames):
         jump_iterations = 0
-    
-    random_object_spawn_rate = random.uniform(0,13)
+        
+    random_object_spawn_rate = random.uniform(0,22)
     keys = pygame.key.get_pressed()
     moving = False
     shooting = False
-    cur_state = 'idle'
-    if keys[pygame.K_w]:
+    cur_state = 'idle' if not dead else None
+    if keys[pygame.K_w] and not dying and not dead:
         player_pos.y -= 200 * dt
         player.y = player_pos.y
         moving = True
         cur_state = 'w'
-    if keys[pygame.K_s]:
+    if keys[pygame.K_s] and not dying and not dead:
         player_pos.y += 200 * dt
         player.y = player_pos.y
         moving = True
         cur_state = 's'
-    if keys[pygame.K_a]:
+    if keys[pygame.K_a] and not dying and not dead:
         facing = 'left'
         player_pos.x -= 200 * dt
         player.x = player_pos.x
         moving = True
         cur_state = 'a'
-    if keys[pygame.K_d]:
+    if keys[pygame.K_d] and not dying and not dead:
         facing = 'right'
         player_pos.x += 200 * dt
         player.x = player_pos.x
         moving = True
         cur_state = 'd'
-    if keys[pygame.K_SPACE]:
+    if keys[pygame.K_SPACE] and not dying and not dead:
         jumping = True
         cur_state = 'space'
-    if keys[pygame.K_h] and time_since_last_shot >= fire_interval:
+    if keys[pygame.K_h] and time_since_last_shot >= fire_interval and not dying and not dead:
         player.shoot(1)
         shooting = True if player.ammo > 0 else False
             #we throw the bullet from the current position
@@ -177,7 +183,6 @@ while run:
         has_wave_finished = False
         next_spawn_in = random.uniform(0.25, 1.25)
     
-        
     
     frame_duration = 1 / ANIM_FPS
     if anim_timer >= frame_duration:
@@ -191,7 +196,10 @@ while run:
             anim_frame = (anim_frame + 1) % len(walk_frames)
         elif shooting:
             anim_frame = (anim_frame + 1) % len(shooting_frames)
-        else:
+        elif dying:
+            anim_frame = (anim_frame + 1) % len(death_frames)
+            dying_frames_passed += 1
+        elif not dead:
             anim_frame = (anim_frame + 1) % len(idle_frames)
     
     if jump_iterations >= 1:
@@ -204,6 +212,10 @@ while run:
         frame = walk_frames[anim_frame % len(walk_frames)]
     elif shooting:
         frame = shooting_frames[anim_frame % len(shooting_frames)]
+    elif dying:
+        frame = death_frames[anim_frame % len(death_frames)]
+    elif dead:
+        frame = death_frames[4]
     else:
         frame = idle_frames[anim_frame % len(idle_frames)]
     
@@ -226,9 +238,7 @@ while run:
         screen.blit(health_fill_cropped, (hud_x + 89, hud_y + 19))
 
     screen.blit(ammo_icon_img, (hud_x + 84, hud_y + 44))
-    
-    
-    
+    player_rect = pygame.Rect(int(player.x - 28), int(player.y - 45), 56, 90)
     #lets draw the fuckers
     for enemy in enemies:
         if enemy.is_dead:
@@ -241,6 +251,15 @@ while run:
         if distance > 0:
             enemy.x += (dx / distance) * enemy_speed * dt
             enemy.y += (dy / distance) * enemy_speed * dt
+        #lets check if there is colllision between the enemies and the player
+        enemy_rect = pygame.Rect(int(enemy.x), int(enemy.y), enemy_size[0], enemy_size[1])
+        if player_rect.colliderect(enemy_rect) and time_since_last_hit >= enemy_hit_cooldown:
+            player.health -= 25
+            time_since_last_hit = 0.0
+            if player.health <= 0:
+                #animate the death scene entirely, disappear all enemies
+                dying = True
+                anim_frame = 0                
     #if shooting:
     for bullet in bullets:
         bullet.updateBullet(dt)
@@ -278,8 +297,8 @@ while run:
     if killed_count == base_enemies:
         has_wave_finished = True
         base_enemies *= 2
-    
-    player_rect = pygame.Rect(int(player.x - 28), int(player.y - 45), 56, 90)
+        killed_count = 0
+        
     for health_drop in healths[:]:
         if health_drop.is_activated:
             health_rect = pygame.Rect(int(health_drop.x - 6), int(health_drop.y - 6), 12, 12)
@@ -333,6 +352,7 @@ while run:
                         if killed_count == base_enemies:
                             has_wave_finished = True
                             base_enemies *= 2
+                            killed_count = 0
             
             g.explosion_timer += dt
             if g.explosion_timer >= frame_duration:
@@ -342,6 +362,15 @@ while run:
         
     time_since_last_shot += dt
     time_since_last_grenade += dt
+    time_since_last_hit += dt
+    if dying_frames_passed >= 4:
+        text = ammo_font.render("YOU DIED", True, (255, 60, 60))
+        screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2))
+        
+        restart_button_rect = pygame.Rect(SCREEN_WIDTH // 2 - 130, SCREEN_HEIGHT // 2 + 70, 260, 70)
+        screen.blit(restart_button_rect)
+        dead = True
+        dying = False
     pygame.display.flip()
     dt = clock.tick(60) / 1000
 
