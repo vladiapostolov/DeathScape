@@ -95,13 +95,41 @@ while run:
         if event.type == pygame.QUIT:
             run = False
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if restart_button_rect.pygame.Rect.collidepoint(event.pos):
+            if restart_button_rect.collidepoint(event.pos):
                 current_wave = 1
                 #Logic: We restart the game, wave is 1, enemies should disappear and annulate everything that was rendered
                 #no idea how to do it tho, lets see
                 player_pos = pygame.Vector2(screen.get_width() / 2, screen.get_height() / 2)
+                player.x = player_pos.x
+                player.y = player_pos.y
                 #we center back the fucker player
-    
+                moving = False
+                cur_state = 'idle'
+                dead = False
+                dying = False
+                jumping = False
+                player.ammo = 50
+                player.health = 100
+                player.has_grenade = False
+                player.grenades_count = 0
+                healths = list()
+                ammos = list()
+                bullets = list()
+                active_grenades = list()
+                grenades = list()
+                dt = 0
+                anim_timer = 0
+                cur_state = ''
+                prev_state = 'idle'
+                jump_iterations = 0
+                dying_frames_passed = 0
+                time_since_last_hit = 0.0
+                random_object_spawn_rate = 0
+                killed_count = 0
+                enemies = list()
+                base_enemies = 5
+                has_wave_finished = True
+                
     if jump_iterations == len(jumping_frames):
         jump_iterations = 0
         
