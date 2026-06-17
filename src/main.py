@@ -87,11 +87,20 @@ ammos = list()
 bullets = list()
 active_grenades = list()
 grenades = list()
+restart_button_rect = pygame.Rect(SCREEN_WIDTH // 2 - 62, SCREEN_HEIGHT // 2 + 50, 120, 50)
+pygame.draw.rect(screen, (80, 80, 80), restart_button_rect)
 
 while run:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if restart_button_rect.pygame.Rect.collidepoint(event.pos):
+                current_wave = 1
+                #Logic: We restart the game, wave is 1, enemies should disappear and annulate everything that was rendered
+                #no idea how to do it tho, lets see
+                player_pos = pygame.Vector2(screen.get_width() / 2, screen.get_height() / 2)
+                #we center back the fucker player
     
     if jump_iterations == len(jumping_frames):
         jump_iterations = 0
@@ -367,8 +376,8 @@ while run:
         text = ammo_font.render("YOU DIED", True, (255, 60, 60))
         screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2))
         
-        restart_button_rect = pygame.Rect(SCREEN_WIDTH // 2 - 130, SCREEN_HEIGHT // 2 + 70, 260, 70)
-        screen.blit(restart_button_rect)
+        restart = ammo_font.render("TRY AGAIN", True, (255, 60, 60))
+        screen.blit(restart, (SCREEN_WIDTH // 2 - 55, SCREEN_HEIGHT // 2 + 70))
         dead = True
         dying = False
     pygame.display.flip()
