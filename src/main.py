@@ -54,7 +54,7 @@ player_pos = pygame.Vector2(screen.get_width() / 2, screen.get_height() / 2)
 facing = 'right'
 
 base_enemies = 5
-current_wave = 1
+current_wave = 5
 spawn_timer = 0.0
 wave_break = 15
 has_wave_finished = True
@@ -95,6 +95,7 @@ pygame.draw.rect(screen, (80, 80, 80), restart_button_rect)
 boss_items = Items()
 boss = None
 dt_boss = 0
+boss_movement_interval = 1.0
 while run:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -339,8 +340,18 @@ while run:
         )
     #boss_animtaion
     if boss:
+        pygame.draw.rect(screen, (150, 0, 0), (boss.x, boss.y, 75, 125))
         direction = -1 if random.choice(('up','down')) == 'down' else 1
-        pygame.draw.rect(screen, (150, 0, 0), (boss.x, boss.y + (50*direction), 250, 300))
+        if dt_boss >= boss_movement_interval:
+            dt_boss = 0.0
+            new_y = boss.y + (50*direction)
+            if new_y <=0:
+                boss.y = 0
+            elif new_y + 125 >= SCREEN_HEIGHT:
+                boss.y = SCREEN_HEIGHT - 125
+            else:
+                boss.y = new_y
+            pygame.draw.rect(screen, (150, 0, 0), (boss.x, boss.y, 75, 125))
         
     ammo_text = ammo_font.render(str(player.ammo), True, ammo_color)
     screen.blit(ammo_text, (170, 63))
@@ -417,6 +428,7 @@ while run:
     time_since_last_shot += dt
     time_since_last_grenade += dt
     time_since_last_hit += dt
+    dt_boss +=  dt
     if dying_frames_passed >= 4:
         text = ammo_font.render("YOU DIED", True, (255, 60, 60))
         screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2))
@@ -427,6 +439,5 @@ while run:
         dying = False
     pygame.display.flip()
     dt = clock.tick(60) / 1000
-
     
 pygame.quit()
