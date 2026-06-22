@@ -9,6 +9,8 @@ from health_object import health_obj
 from ammo_object import ammo_obj
 from grenade_object import grenade_obj
 from picked_grenade import ThrowGrenade
+from boss_items import Items
+from boss import Boss
 
 pygame.init()
 
@@ -90,6 +92,9 @@ grenades = list()
 restart_button_rect = pygame.Rect(SCREEN_WIDTH // 2 - 62, SCREEN_HEIGHT // 2 + 50, 120, 50)
 pygame.draw.rect(screen, (80, 80, 80), restart_button_rect)
 
+boss_items = Items()
+boss = None
+dt_boss = 0
 while run:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -205,22 +210,28 @@ while run:
         spawn_timer = 0.0
 
     if has_wave_finished:
-        for _ in range(base_enemies):
-            side = random.choice(("left", "right"))
-            enemy_y = random.randint(0, SCREEN_HEIGHT)
+        if current_wave % 5 == 0 and boss is None:
+            #this is boss wave:
+            boss_rect = pygame.Rect(0,SCREEN_HEIGHT // 2, 250, 300)
+            boss = Boss(boss_rect)
+            pygame.draw.rect(screen, (150, 0, 0), boss_rect)
+            has_wave_finished = False
+        else:
+            for _ in range(base_enemies):
+                side = random.choice(("left", "right"))
+                enemy_y = random.randint(0, SCREEN_HEIGHT)
             
-            if side == "left":
-                enemy_x = 0
-                enemy = Enemy(enemy_x, enemy_y)
-            else:
-                enemy_x = SCREEN_WIDTH
-                enemy = Enemy(enemy_x, enemy_y)
+                if side == "left":
+                    enemy_x = 0
+                    enemy = Enemy(enemy_x, enemy_y)
+                else:
+                    enemy_x = SCREEN_WIDTH
+                    enemy = Enemy(enemy_x, enemy_y)
             
-            enemies.append(enemy)
-        has_wave_finished = False
-        next_spawn_in = random.uniform(0.25, 1.25)
-    
-    
+                enemies.append(enemy)
+            has_wave_finished = False
+            next_spawn_in = random.uniform(0.25, 1.25)
+            
     frame_duration = 1 / ANIM_FPS
     if anim_timer >= frame_duration:
         if jumping:    
@@ -326,7 +337,11 @@ while run:
             BULLET_COLOR,
             (int(bullet.x), int(bullet.y), BULLET_W, BULLET_H)
         )
-    
+    #boss_animtaion
+    if boss:
+        direction = -1 if random.choice(('up','down')) == 'down' else 1
+        pygame.draw.rect(screen, (150, 0, 0), (boss.x, boss.y + (50*direction), 250, 300))
+        
     ammo_text = ammo_font.render(str(player.ammo), True, ammo_color)
     screen.blit(ammo_text, (170, 63))
     grenade_text = grenade_font.render(str(player.grenades_count), True, grenade_color)
@@ -335,6 +350,7 @@ while run:
         has_wave_finished = True
         base_enemies *= 2
         killed_count = 0
+        current_wave += 1
         
     for health_drop in healths[:]:
         if health_drop.is_activated:
@@ -390,6 +406,7 @@ while run:
                             has_wave_finished = True
                             base_enemies *= 2
                             killed_count = 0
+                            current_wave += 1
             
             g.explosion_timer += dt
             if g.explosion_timer >= frame_duration:
