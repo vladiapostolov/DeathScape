@@ -6,7 +6,7 @@ import pygame
 class Boss:
     def __init__(self, boss_rect):
         self.boss_rect = boss_rect
-        self.health = 1000
+        self.health = 6000
         self.x = boss_rect.x
         self.y = boss_rect.y
         

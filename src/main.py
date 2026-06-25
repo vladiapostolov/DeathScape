@@ -54,7 +54,7 @@ player_pos = pygame.Vector2(screen.get_width() / 2, screen.get_height() / 2)
 facing = 'right'
 
 base_enemies = 5
-current_wave = 5
+current_wave = 1
 spawn_timer = 0.0
 wave_break = 15
 has_wave_finished = True
@@ -332,6 +332,15 @@ while run:
                     grenades.append(object_to_spawn)
                     object_to_spawn.is_activated = True
             continue
+        
+        bullet_rect = pygame.Rect(int(bullet.x), int(bullet.y), BULLET_W, BULLET_H)
+        if boss is not None and boss_rect.colliderect(bullet_rect):
+            boss.health -= bullet.damage
+            if boss.health <= 0:
+                boss = None
+                has_wave_finished = True
+                current_wave += 1
+        
             
         pygame.draw.rect(
             screen,
@@ -340,7 +349,11 @@ while run:
         )
     #boss_animtaion
     if boss:
+        ratio = boss.health / 6000
+        pygame.draw.rect(screen, "red", (SCREEN_WIDTH - 320, 20, 300, 40))
+        pygame.draw.rect(screen, "green", (SCREEN_WIDTH - 320, 20, 300 * ratio, 40))
         pygame.draw.rect(screen, (150, 0, 0), (boss.x, boss.y, 75, 125))
+       
         direction = -1 if random.choice(('up','down')) == 'down' else 1
         if dt_boss >= boss_movement_interval:
             dt_boss = 0.0
