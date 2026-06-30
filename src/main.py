@@ -54,7 +54,7 @@ player_pos = pygame.Vector2(screen.get_width() / 2, screen.get_height() / 2)
 facing = 'right'
 
 base_enemies = 5
-current_wave = 1
+current_wave = 5
 spawn_timer = 0.0
 wave_break = 15
 has_wave_finished = True
@@ -96,6 +96,16 @@ boss_items = Items()
 boss = None
 dt_boss = 0
 boss_movement_interval = 1.0
+boss_shield_interval = 8.0
+dt_shield = 0
+spawnBossAfterTime = 0.0
+timer = 5.0
+hasTimerPassed = False
+boss_attack_timer = 4.0
+attack_timer_passed = 0.0
+boss_circles_render_timer = 1.2
+boss_circles_passed_time = 0.0
+animated_circles = False
 while run:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -213,10 +223,13 @@ while run:
     if has_wave_finished:
         if current_wave % 5 == 0 and boss is None:
             #this is boss wave:
-            boss_rect = pygame.Rect(0,SCREEN_HEIGHT // 2, 250, 300)
-            boss = Boss(boss_rect)
-            pygame.draw.rect(screen, (150, 0, 0), boss_rect)
-            has_wave_finished = False
+            if spawnBossAfterTime >= timer:
+                boss_rect = pygame.Rect(0,SCREEN_HEIGHT // 2, 250, 300)
+                boss = Boss(boss_rect)
+                pygame.draw.rect(screen, (150, 0, 0), boss_rect)
+                has_wave_finished = False
+                spawnBossAfterTime = 0.0
+                hasTimerPassed = True
         else:
             for _ in range(base_enemies):
                 side = random.choice(("left", "right"))
@@ -340,7 +353,10 @@ while run:
                 boss = None
                 has_wave_finished = True
                 current_wave += 1
-        
+        for shield in boss_items.shields:
+            if shield.colliderect(bullet_rect):
+                boss_items.shields.remove(shield)
+                bullet.collided = True
             
         pygame.draw.rect(
             screen,
@@ -353,7 +369,11 @@ while run:
         pygame.draw.rect(screen, "red", (SCREEN_WIDTH - 320, 20, 300, 40))
         pygame.draw.rect(screen, "green", (SCREEN_WIDTH - 320, 20, 300 * ratio, 40))
         pygame.draw.rect(screen, (150, 0, 0), (boss.x, boss.y, 75, 125))
-       
+        #now we animate the different boss items
+        if dt_shield >= boss_shield_interval:
+            dt_shield = 0.0
+            shield_rect = pygame.Rect(boss.x + 150, boss.y, 100, 200)
+            boss_items.add_shields(shield_rect)
         direction = -1 if random.choice(('up','down')) == 'down' else 1
         if dt_boss >= boss_movement_interval:
             dt_boss = 0.0
@@ -365,7 +385,29 @@ while run:
             else:
                 boss.y = new_y
             pygame.draw.rect(screen, (150, 0, 0), (boss.x, boss.y, 75, 125))
-        
+        for shield in boss_items.shields:
+            pygame.draw.rect(screen, "purple", shield)
+        if attack_timer_passed >= boss_attack_timer or animated_circles == True:
+            attack_timer_passed = 0.0
+            if animated_circles == False:
+                circles_to_draw = boss.attack()
+                animated_circles = True
+            else:
+                if boss_circles_passed_time >= boss_circles_render_timer:
+                    boss_circles_passed_time = 0.0
+                    animated_circles = False
+            for circle in circles_to_draw:
+                pygame.draw.circle(screen, "orange", (circle["x"], circle["y"]), circle["radius"], width=0)
+                orange_circle_rect = pygame.Rect(int(circle["x"]), int(circle["y"]), circle["radius"] * 2, circle["radius"] * 2)
+                if orange_circle_rect.colliderect(player_rect):
+                    player.health -= 30
+                    circles_to_draw.remove(circle)
+                    if player.health <= 0:
+                        dying = True
+                        anim_frame = 0
+                        boss = None
+                        
+                
     ammo_text = ammo_font.render(str(player.ammo), True, ammo_color)
     screen.blit(ammo_text, (170, 63))
     grenade_text = grenade_font.render(str(player.grenades_count), True, grenade_color)
@@ -441,7 +483,14 @@ while run:
     time_since_last_shot += dt
     time_since_last_grenade += dt
     time_since_last_hit += dt
-    dt_boss +=  dt
+    if hasTimerPassed:
+        dt_boss +=  dt
+        dt_shield += dt
+        attack_timer_passed += dt
+        if animated_circles:
+            boss_circles_passed_time += dt
+    if current_wave % 5 == 0:
+        spawnBossAfterTime += dt
     if dying_frames_passed >= 4:
         text = ammo_font.render("YOU DIED", True, (255, 60, 60))
         screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2))

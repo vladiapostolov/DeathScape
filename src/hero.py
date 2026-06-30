@@ -22,6 +22,8 @@ class Hero:
     
     def shoot(self, shotFired):
         self.ammo -= 1
+        if self.ammo < 0:
+            self.ammo = 0
         
     def has_grenade(self):
         return self.grenades_count > 0 
